@@ -84,85 +84,33 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// LIST ALL PRODUCTS
-router.get('/', async (req, res) => {
-    try {
-        const products = await Product.findAll();
-        res.status(200).json(products.map(p => p.serialize()));
-    } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
-
-// LIST PRODUCTS BY NAME
-router.get('/', async (req, res) => {
-    try {
-        const name = req.query.name;
-        const where = {};
-
-        if (name) {
-            where.name = { [Op.iLike]: `%${name}%` };
-        }
-
-        const products = await Product.findAll({ where });
-        res.status(200).json(products.map(p => p.serialize()));
-    } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
-
-// LIST PRODUCTS BY CATEGORY
-router.get('/', async (req, res) => {
-    try {
-        const { category, name } = req.query;
-        const where = {};
-
-        if (name) {
-            where.name = { [Op.iLike]: `%${name}%` };
-        }
-
-        if (category) {
-            if (Object.values(Category).includes(category)) {
-                where.category = category;
-            } else {
-                return res.status(200).json([]);
-            }
-        }
-
-        const products = await Product.findAll({ where });
-        res.status(200).json(products.map(p => p.serialize()));
-    } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
-
 // LIST PRODUCTS (ALL FILTERS)
 router.get('/', async (req, res) => {
     try {
-        const { category, availability, name } = req.query;
-        const where = {};
-
-        if (name) {
-            where.name = { [Op.iLike]: `%${name}%` };
+      const { category, availability, name } = req.query;
+      const where = {};
+  
+      if (name) {
+        where.name = { [Op.iLike]: `%${name}%` };
+      }
+  
+      if (availability) {
+        where.available = availability === 'true';
+      }
+  
+      if (category) {
+        if (Object.values(Category).includes(category)) {
+          where.category = category;
+        } else {
+          return res.status(200).json([]);
         }
-
-        if (availability) {
-            where.available = availability === 'true';
-        }
-
-        if (category) {
-            if (Object.values(Category).includes(category)) {
-                where.category = category;
-            } else {
-                return res.status(200).json([]);
-            }
-        }
-
-        const products = await Product.findAll({ where });
-        res.status(200).json(products.map(p => p.serialize()));
+      }
+  
+      const products = await Product.findAll({ where });
+      res.status(200).json(products.map(p => p.serialize()));
     } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' });
+      res.status(500).json({ error: 'Internal Server Error' });
     }
-});
-
+  });
+  
 module.exports = router;
