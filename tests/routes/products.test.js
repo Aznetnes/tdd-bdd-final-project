@@ -232,16 +232,101 @@ describe('Product Routes', () => {
     test('should filter products by availability', async () => {
         const availableProduct = ProductFactory.build({ available: true });
         const unavailableProduct = ProductFactory.build({ available: false });
-      
+
         await request(app).post(BASE_URL).send(availableProduct).expect(201);
         await request(app).post(BASE_URL).send(unavailableProduct).expect(201);
-      
+
         const response = await request(app)
-          .get(`${BASE_URL}?availability=true`)
-          .expect(200);
-      
+            .get(`${BASE_URL}?availability=true`)
+            .expect(200);
+
         expect(response.body.length).toBe(1);
         expect(response.body[0].available).toBe(true);
-      });
-      
+    });
+
+    describe('Error handling and uncovered branches', () => {
+        afterEach(() => {
+            jest.restoreAllMocks();
+        });
+
+        test('should return 400 when product creation fails', async () => {
+            jest.spyOn(Product, 'create')
+                .mockRejectedValue(new Error('Database error'));
+
+            const productData = ProductFactory.build();
+
+            const response = await request(app)
+                .post(BASE_URL)
+                .send(productData)
+                .expect(400);
+
+            expect(response.body.error).toBe('Bad Request');
+        });
+
+        test('should return 500 when retrieving a product fails', async () => {
+            jest.spyOn(Product, 'findByPk')
+                .mockRejectedValue(new Error('Database error'));
+
+            await request(app)
+                .get(`${BASE_URL}/123`)
+                .expect(500);
+        });
+
+        test('should return 404 when updating a non-existent product', async () => {
+            jest.spyOn(Product, 'findByPk')
+                .mockResolvedValue(null);
+
+            await request(app)
+                .put(`${BASE_URL}/99999`)
+                .send(ProductFactory.build())
+                .expect(404);
+        });
+
+        test('should return 400 when updating a product fails', async () => {
+            const product = {
+                update: jest.fn().mockRejectedValue(new Error('Database error'))
+            };
+
+            jest.spyOn(Product, 'findByPk')
+                .mockResolvedValue(product);
+
+            const response = await request(app)
+                .put(`${BASE_URL}/123`)
+                .send(ProductFactory.build())
+                .expect(400);
+
+            expect(response.body.error).toBe('Bad Request');
+        });
+
+        test('should return 500 when deleting a product fails', async () => {
+            const product = {
+                destroy: jest.fn().mockRejectedValue(new Error('Database error'))
+            };
+
+            jest.spyOn(Product, 'findByPk')
+                .mockResolvedValue(product);
+
+            await request(app)
+                .delete(`${BASE_URL}/123`)
+                .expect(500);
+        });
+
+        test('should return an empty list for an unknown category', async () => {
+            const response = await request(app)
+                .get(`${BASE_URL}?category=INVALID_CATEGORY`)
+                .expect(200);
+
+            expect(response.body).toEqual([]);
+        });
+
+        test('should return 500 when listing products fails', async () => {
+            jest.spyOn(Product, 'findAll')
+                .mockRejectedValue(new Error('Database error'));
+
+            await request(app)
+                .get(BASE_URL)
+                .expect(500);
+        });
+    });
+
 });

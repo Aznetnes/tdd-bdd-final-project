@@ -167,5 +167,33 @@ describe('Product Model', () => {
     }
   });
 
+  test('should find products by price', async () => {
+    const productData = ProductFactory.build({ price: 19.99 });
+    delete productData.id;
+
+    await Product.create(productData);
+
+    const found = await Product.findByPrice(19.99);
+
+    expect(found.length).toBe(1);
+    expect(parseFloat(found[0].price)).toBe(19.99);
+  });
+
+  test('should find available products by default', async () => {
+    const availableProduct = ProductFactory.build({ available: true });
+    delete availableProduct.id;
+
+    const unavailableProduct = ProductFactory.build({ available: false });
+    delete unavailableProduct.id;
+
+    await Product.create(availableProduct);
+    await Product.create(unavailableProduct);
+
+    const found = await Product.findByAvailability();
+
+    expect(found.length).toBe(1);
+    expect(found[0].available).toBe(true);
+  });
+
   
 });
